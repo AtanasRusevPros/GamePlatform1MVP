@@ -1,0 +1,16 @@
+FROM docker.io/library/node:20-bookworm-slim AS web-build
+WORKDIR /workspace
+
+COPY package.json package-lock.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY tsconfig.json tsconfig.base.json ./
+
+RUN npm ci
+RUN npx vite build --config apps/web/vite.config.ts
+
+FROM docker.io/caddy:2.10.2-alpine
+
+COPY infra/podman/caddy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=web-build /workspace/apps/web/dist /srv
+

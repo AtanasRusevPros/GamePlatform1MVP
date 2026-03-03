@@ -1,0 +1,32 @@
+{
+  auto_https disable_redirects
+}
+
+http://localhost, http://127.0.0.1 {
+  bind 0.0.0.0
+  route {
+    handle_path /api/* {
+      reverse_proxy api:3001
+    }
+
+    encode zstd gzip
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+}
+
+https://localhost, https://127.0.0.1 {
+  bind 0.0.0.0
+  tls internal
+  route {
+    handle_path /api/* {
+      reverse_proxy api:3001
+    }
+
+    encode zstd gzip
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+}

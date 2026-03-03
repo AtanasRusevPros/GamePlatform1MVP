@@ -1,0 +1,29 @@
+FROM docker.io/library/node:20-bookworm-slim AS build
+WORKDIR /workspace
+
+COPY package.json package-lock.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY infra/sql ./infra/sql
+COPY tsconfig.json tsconfig.base.json tsconfig.eslint.json ./
+COPY eslint.config.mjs vitest.config.mts vitest.web.config.mts ./
+
+RUN npm ci
+RUN npm run build
+
+FROM docker.io/library/node:20-bookworm-slim
+WORKDIR /app
+
+COPY --from=build /workspace/package.json /workspace/package-lock.json ./
+COPY --from=build /workspace/node_modules ./node_modules
+COPY --from=build /workspace/apps/api/dist ./apps/api/dist
+COPY --from=build /workspace/packages/shared/package.json ./packages/shared/package.json
+COPY --from=build /workspace/packages/shared/dist ./packages/shared/dist
+COPY --from=build /workspace/packages/game-sdk/package.json ./packages/game-sdk/package.json
+COPY --from=build /workspace/packages/game-sdk/dist ./packages/game-sdk/dist
+COPY --from=build /workspace/infra/sql ./infra/sql
+
+ENV NODE_ENV=production
+EXPOSE 3001
+
+CMD ["node", "apps/api/dist/server.js"]

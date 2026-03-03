@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Repo: Status",
+      "type": "shell",
+      "command": "git status --short",
+      "problemMatcher": []
+    },
+    {
+      "label": "Repo: Diff",
+      "type": "shell",
+      "command": "git diff --stat",
+      "problemMatcher": []
+    },
+    {
+      "label": "Search: TODO",
+      "type": "shell",
+      "command": "rg -n \"TODO|FIXME\" ${workspaceFolder}",
+      "problemMatcher": []
+    },
+    {
+      "label": "Project: Test",
+      "type": "shell",
+      "command": "npm test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Project: Lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "problemMatcher": []
+    },
+    {
+      "label": "Project: Build",
+      "type": "shell",
+      "command": "npm run build",
+      "problemMatcher": []
+    }
+  ]
+}

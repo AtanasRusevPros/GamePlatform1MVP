@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kids_games}
+      POSTGRES_USER: ${POSTGRES_USER:-kids_games}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kids_games} -d ${POSTGRES_DB:-kids_games}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    image: docker.io/valkey/valkey:8-alpine
+    command: ["valkey-server", "--save", "60", "1"]
+    volumes:
+      - valkey_data:/data:Z
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/podman/api/Containerfile
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 3001
+      API_LOG_LEVEL: info
+      DATABASE_MODE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kids_games}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kids_games}
+      DB_AUTO_MIGRATE: "true"
+      DB_AUTO_SEED: "true"
+      DB_CONNECT_RETRIES: "30"
+      DB_CONNECT_RETRY_DELAY_MS: "1000"
+      JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
+      REFRESH_TOKEN_TTL_SECONDS: ${REFRESH_TOKEN_TTL_SECONDS:-604800}
+      VALKEY_URL: redis://valkey:6379
+    depends_on:
+      postgres:
+        condition: service_started
+      valkey:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    build:
+      context: ../..
+      dockerfile: infra/podman/caddy/Containerfile
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      CADDY_TLS_MODE: ${CADDY_TLS_MODE:-internal}
+
+volumes:
+  postgres_data:
+  valkey_data:
