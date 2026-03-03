@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 test-results/
+*.tsbuildinfo
 .DS_Store
 infra/podman/.env
 infra/podman/backups/
